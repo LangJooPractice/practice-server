@@ -5,6 +5,7 @@ import com.langjoo.prac.auth.dto.AuthResponse; // 로그인 응답 (JWT 토큰 �
 import com.langjoo.prac.auth.dto.LoginRequest; // 로그인 요청 DTO
 import com.langjoo.prac.user.dto.UserRegisterRequest; // 회원가입 요청 DTO
 import com.langjoo.prac.user.dto.UserProfileResponse; // 프로필 조회 응답 DTO
+import com.langjoo.prac.user.dto.UserUpdateRequest;
 import com.langjoo.prac.user.service.UserService;
 import com.langjoo.prac.auth.service.AuthService; // 인증 서비스 분리 가정
 
@@ -42,7 +43,6 @@ public class UserController {
     }
 
 
-
     // 3. 프로필 보기
     @GetMapping("/{username}")
     public ResponseEntity<UserProfileResponse> getUserProfile(
@@ -59,8 +59,25 @@ public class UserController {
     }
 
 
+    // 프로필 수정
+    @PatchMapping // 👈 PATCH 메서드를 사용하여 부분 업데이트를 나타냅니다.
+    public ResponseEntity<UserProfileResponse> updateUserProfile(
+            // 📌 현재 로그인 사용자 ID
+            @AuthenticationPrincipal UserDetailsImpl currentUser,
 
-    // 4. 회원 탈퇴
+            // 📌 요청 본문에서 DTO를 받습니다. @Valid로 유효성 검사 수행.
+            @RequestBody @Valid UserUpdateRequest request) {
+
+        // Service 계층으로 ID와 요청 DTO 전달
+        UserProfileResponse response = userService.updateUser(currentUser.getUserId(), request);
+
+        // 업데이트된 리소스와 함께 200 OK 반환
+        return ResponseEntity.ok(response);
+    }
+
+
+
+    // 5. 회원 탈퇴
     // DELETE /api/users
     @DeleteMapping
     public ResponseEntity<Void> deactivateUser(

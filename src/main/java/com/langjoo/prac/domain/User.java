@@ -3,12 +3,14 @@ package com.langjoo.prac.domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
 @Getter
+@Setter
 @Table(name = "users")
 @NoArgsConstructor
 public class User extends BaseEntity {
@@ -28,6 +30,14 @@ public class User extends BaseEntity {
     // 3. 📌 닉네임 (표시 이름) - 중복 허용
     @Column(name = "nickname", nullable = false)
     private String nickname; // 👈 닉네임 필드 추가
+
+    // 4. 바이오
+    @Column(name = "bio")
+    private String bio;
+
+    // 5. 위치
+    @Column(name = "address")
+    private String address;
 
     @Column(name = "user_pw", nullable = false)
     private String password;

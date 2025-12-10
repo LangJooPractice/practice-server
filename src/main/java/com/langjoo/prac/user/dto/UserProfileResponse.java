@@ -15,6 +15,8 @@ public class UserProfileResponse {
     private String username;    // @아이디
     private String nickname;    // 표시 이름
     private LocalDateTime joinedAt; // 가입 일시
+    private String bio;             // 바이오
+    private String address;         // 위치
 
     // 통계 정보
     private long tweetCount;       // 작성한 총 트윗 수 (리트윗 포함)
@@ -39,6 +41,8 @@ public class UserProfileResponse {
                 .username(user.getUsername())
                 .nickname(user.getNickname())
                 .joinedAt(user.getCreatedAt()) // BaseEntity에서 상속받은 createdAt
+                .bio(user.getBio())
+                .address(user.getAddress())
 
                 .tweetCount(tweetCount)
                 .followingCount(followingCount)
@@ -48,4 +52,5 @@ public class UserProfileResponse {
                 .recentTweets(recentTweets)
                 .build();
     }
+
 }
