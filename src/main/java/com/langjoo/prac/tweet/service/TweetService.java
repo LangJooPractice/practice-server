@@ -11,7 +11,7 @@ public interface TweetService {
     List<TweetResponse> getTimelineFeed(Long currentUserId, Pageable pageable);
 
     // 2. 트윗 상세 조회
-    TweetResponse getTweetByUsernameAndId(String username, Long tweetId);
+    TweetResponse getTweetById(Long tweetId);
 
     // 3. 신규 트윗 작성
     TweetResponse createTweet(Long userId, TweetRequest request);

@@ -64,11 +64,14 @@ public class UserServiceImpl implements UserService {
     // -------------------------------------------------------------
     @Override
     @Transactional // 읽기 전용 트랜잭션으로 최적화 (데이터 변경이 없으므로)
-    public UserProfileResponse getUserProfile(String username) {
+    public UserProfileResponse getUserProfile(Long currentUserId, String username) {
 
         // 1. username으로 사용자 조회 (NotFoundException 발생 가능)
-        User profileUser = userRepository.findByUsername(username)
+        User profileUser = userRepository.findByUsername( username)
                 .orElseThrow(() -> new NotFoundException("사용자 @" + username + "을(를) 찾을 수 없습니다."));
+
+        // 2. 현재 로그인 사용자 (A) 조회
+        User currentUser = findUserById(currentUserId);
 
         // 2. 통계 정보 조회 및 계산
         // 좋아요/리트윗 카운트까지 통합하여 UserProfileResponse를 구성
@@ -82,9 +85,12 @@ public class UserServiceImpl implements UserService {
         // 팔로워 수 (User가 Following인 관계의 수)
         long followerCount = followRepository.countByFollowing(profileUser);
 
-        // 💡 로그인된 사용자 정보가 필요하지만, 현재 메서드에는 없으므로 false로 가정
-        // 실제 구현 시 @AuthenticationPrincipal을 통해 현재 로그인 유저와 비교하여 isFollowing 계산
-        boolean isFollowing = false; // followRepository.existsByFollowerAndFollowing(currentUser, profileUser);
+        /// 3. 📌 [추가] 팔로우 여부 확인 로직
+        // 현재 로그인 유저(Follower)가 프로필 대상 유저(Following)를 팔로우하는지 확인
+        boolean isFollowing = followRepository.findByFollowerAndFollowing(
+                currentUser,
+                profileUser
+        ).isPresent();
 
         // 3. 최신 트윗 목록 조회 (페이지네이션 없이 20개만 조회한다고 가정)
         // 트윗을 가져올 때 User 엔티티가 필요합니다.
@@ -119,5 +125,10 @@ public class UserServiceImpl implements UserService {
         userRepository.delete(user);
 
         // 💡 실제 서비스에서는 user.setActive(false)와 같이 상태를 변경하는 것이 좋습니다.
+    }
+
+    private User findUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다: ID " + userId));
     }
 }

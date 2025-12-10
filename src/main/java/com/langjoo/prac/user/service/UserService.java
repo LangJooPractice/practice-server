@@ -8,8 +8,8 @@ public interface UserService {
     // 1. 신규 회원 가입
     void registerUser(UserRegisterRequest request);
 
-    // 2. 특정 사용자의 프로필 조회
-    UserProfileResponse getUserProfile(String username);
+
+    UserProfileResponse getUserProfile(Long currentUserId, String username);
 
     // 3. 회원 탈퇴 (비활성화)
     void deactivateUser(Long userId);

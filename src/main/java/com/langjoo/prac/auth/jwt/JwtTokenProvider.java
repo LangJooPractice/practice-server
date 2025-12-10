@@ -99,4 +99,33 @@ public class JwtTokenProvider {
             throw new AuthException("유효하지 않은 토큰입니다.");
         }
     }
+
+
+    // -------------------------------------------------------------
+// 8. 토큰에서 사용자 ID (userId) 추출 (새로 정의)
+// -------------------------------------------------------------
+// 이 메서드는 JwtAuthenticationFilter에서 사용될 것입니다.
+    public Long getUserIdFromToken(String authToken) {
+        // 1. getClaimsFromToken 메서드를 호출하여 Claims 객체를 얻습니다.
+        Claims claims = getClaimsFromToken(authToken);
+
+        // 2. Claims에서 'userId' 키를 사용하여 Long 타입으로 값을 추출합니다.
+        // 참고: JWT 생성 시 claim("userId", userId)로 저장했다고 가정합니다.
+        Object userIdObj = claims.get("userId");
+
+        if (userIdObj == null) {
+            // 토큰에 userId 클레임이 없는 경우
+            throw new AuthException("JWT에 필수 정보인 userId가 포함되어 있지 않습니다.");
+        }
+
+        // JWT Claims의 숫자는 Integer 또는 Long으로 저장될 수 있으므로 Long으로 안전하게 변환
+        if (userIdObj instanceof Integer) {
+            return ((Integer) userIdObj).longValue();
+        } else if (userIdObj instanceof Long) {
+            return (Long) userIdObj;
+        } else {
+            // 문자열로 저장되었을 경우 (가장 일반적)
+            return Long.parseLong(userIdObj.toString());
+        }
+    }
 }

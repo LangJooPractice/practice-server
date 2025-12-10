@@ -41,16 +41,24 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    // 3. 특정 사용자의 프로필 화면으로 이동하여 개인 타임라인 로딩
-    // GET /api/users/{username}
+
+
+    // 3. 프로필 보기
     @GetMapping("/{username}")
     public ResponseEntity<UserProfileResponse> getUserProfile(
+            // 📌 [수정] 현재 로그인 사용자 정보(ID)를 가져옵니다.
+            @AuthenticationPrincipal UserDetailsImpl currentUser,
             @PathVariable String username) {
 
-        // Service 계층에서 username을 사용하여 사용자 정보 및 해당 유저의 최신 트윗 목록을 함께 조회
-        UserProfileResponse response = userService.getUserProfile(username);
+        // 📌 [수정] 현재 사용자의 ID를 서비스로 전달합니다.
+        Long currentUserId = currentUser.getUserId();
+
+        // Service 계층으로 ID와 username 모두 전달
+        UserProfileResponse response = userService.getUserProfile(currentUserId, username);
         return ResponseEntity.ok(response);
     }
+
+
 
     // 4. 회원 탈퇴
     // DELETE /api/users

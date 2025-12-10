@@ -36,14 +36,13 @@ public class TweetController {
 
 
     // 2. 트윗 하나 자세하게 띄우기
-    // GET /prac.com/{username}/status/{tweetId}
-    @GetMapping("/{username}/status/{tweetId}")
+    // GET /prac.com/tweets/{tweetId}
+    @GetMapping("/tweets/{tweetId}")
     public ResponseEntity<TweetResponse> getTweetDetail(
-            @PathVariable String username,
             @PathVariable Long tweetId) {
 
         // Service 계층에서 username을 검증하며 트윗 상세 조회
-        TweetResponse response = tweetService.getTweetByUsernameAndId(username, tweetId);
+        TweetResponse response = tweetService.getTweetById(tweetId);
         return ResponseEntity.ok(response);
     }
 

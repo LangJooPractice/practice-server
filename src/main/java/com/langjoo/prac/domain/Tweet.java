@@ -17,42 +17,62 @@ public class Tweet extends BaseEntity{
     @Column(name = "tweet_id")
     private Long id;
 
-    // 📌 사용자(User) 외래 키 매핑 부분
-    @ManyToOne(fetch = FetchType.LAZY) // Tweet(N) : User(1) 관계 정의
-    @JoinColumn(name = "user_id", nullable = false) // 실제 DB 컬럼 이름을 'user_id'로 지정
-    private User user; // JPA가 이 필드를 통해 User 엔티티 전체를 관리
+    // 사용자(User) 외래 키 매핑 부분
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(nullable = false, length = 280) // NOT NULL 제약조건과 최대 길이 280 지정
+    @Column(nullable = false, length = 280)
     private String content;
 
     @Column(name = "rt_count")
-    private Integer retweetCount;
+    private int retweetCount; // int 타입 유지 (기본값 0)
 
     @Column(name = "like_count")
-    private Integer likeCount;
+    private int likeCount; // int 타입 유지 (기본값 0)
 
-    @Column(name = "is_retweet")
-    private boolean isRetweet;
+    // 📌 [수정] boolean isRetweet 대신 RetweetType Enum 사용
+    @Enumerated(EnumType.STRING) // DB에 문자열로 저장
+    @Column(name = "retweet_type", nullable = false)
+    private RetweetType retweetType = RetweetType.ORIGINAL; // 기본값은 ORIGINAL
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "original_tweet_id")
     private Tweet originalTweet;
 
-    // 💡 일반 트윗 생성자: 클래스 이름과 동일하게, 반환 타입(void 등)은 삭제해야 합니다.
+
+    // 💡 [수정] 일반 트윗 생성자: RetweetType.ORIGINAL로 설정
     public Tweet(User user, String content) {
         this.user = user;
         this.content = content;
-        this.isRetweet = false;
+        this.retweetType = RetweetType.ORIGINAL; // 👈 타입 설정
         this.originalTweet = null;
     }
 
-    // 💡 리트윗 팩토리 메서드 추가
-    public static Tweet createRetweet(User user, Tweet originalTweet, String quoteContent) {
+    // 💡 [추가] 리트윗 여부를 확인하는 헬퍼 메서드 (기존 isRetweet()의 역할 대체)
+    public boolean isRetweet() {
+        return this.retweetType != RetweetType.ORIGINAL;
+    }
+
+
+    // 💡 [수정] 리트윗 팩토리 메서드: content와 type을 분리하여 생성
+    public static Tweet createRetweet(User user, Tweet originalTweet, String quoteContent, RetweetType type) {
         Tweet retweet = new Tweet();
         retweet.setUser(user);
-        retweet.setContent(quoteContent);
+
+        // 순수 리트윗(PURE_RETWEET)의 경우 quoteContent는 ""가 됩니다.
+        String contentToSave = (quoteContent != null && !quoteContent.trim().isEmpty())
+                ? quoteContent
+                : "";
+
+        retweet.setContent(contentToSave);
         retweet.setOriginalTweet(originalTweet);
-        retweet.setRetweet(true); // isRetweet 필드가 true로 설정됨
+
+        // 📌 타입 설정
+        retweet.setRetweetType(type); // 👈 외부에서 PURE 또는 QUOTE 타입을 받아 설정
+
+        // likeCount, retweetCount는 int 타입 기본값 0으로 자동 설정
+
         return retweet;
     }
 }
