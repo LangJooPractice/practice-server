@@ -17,7 +17,7 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping
+@RequestMapping("/api")
 public class TweetController {
 
     private final TweetService tweetService; // 💡 Service 계층 주입

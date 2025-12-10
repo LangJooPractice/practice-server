@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/tweets")
+@RequestMapping("/api/tweets")
 @RequiredArgsConstructor
 public class LikeController {
 
