@@ -8,6 +8,10 @@ import java.util.Optional;
 
 public interface TweetRepository extends JpaRepository<Tweet, Long> {
 
+    // 📌 1. 특정 User가 작성한 총 트윗 수 계산
+    // SELECT COUNT(t) FROM Tweet t WHERE t.user = :profileUser
+    long countByUser(User profileUser);
+
     // 특정 사용자가 작성한 모든 일반 트윗(리트윗이 아닌 트윗)을 최신순으로 조회
     List<Tweet> findByUserAndIsRetweetFalseOrderByCreatedAtDesc(User user);
 

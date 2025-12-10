@@ -19,4 +19,13 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
 
     // 팔로우 관계가 존재하는지 여부를 빠르게 확인
     boolean existsByFollowerAndFollowing(User follower, User following);
+
+    // 📌 2. 팔로잉 수 계산 (현재 User가 'Follower'인 관계의 수)
+    // SELECT COUNT(f) FROM Follow f WHERE f.follower = :profileUser
+    long countByFollower(User profileUser);
+
+    // 📌 3. 팔로워 수 계산 (현재 User가 'Following'인 관계의 수)
+    // SELECT COUNT(f) FROM Follow f WHERE f.following = :profileUser
+    long countByFollowing(User profileUser);
+
 }
