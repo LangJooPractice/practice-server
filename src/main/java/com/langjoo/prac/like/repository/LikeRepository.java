@@ -24,6 +24,5 @@ public interface LikeRepository extends JpaRepository<Like, Long> {
     // 📌 추가 권장: 좋아요 관계가 존재하는지 여부를 빠르게 확인
     boolean existsByUserAndTweet(User user, Tweet tweet);
 
-    // @Transactional 어노테이션이 필요하며, 삭제된 레코드 수를 반환합니다.
-    void deleteByUserAndTweet(User user, Tweet tweet);
+
 }

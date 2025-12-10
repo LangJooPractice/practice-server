@@ -30,4 +30,10 @@ public class Like extends BaseEntity {
     @JoinColumn(name = "tweet_id", nullable = false) // DB 외래키 컬럼 이름
     private Tweet tweet; // 좋아요를 받은 Tweet 객체
 
+    // 💡 생성자
+    public Like(User user, Tweet tweet) {
+        this.user = user;
+        this.tweet = tweet;
+    }
+
 }
