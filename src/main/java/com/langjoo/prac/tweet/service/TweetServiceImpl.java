@@ -1,11 +1,9 @@
 package com.langjoo.prac.tweet.service;
 
 import com.langjoo.prac.common.exception.DuplicateException;
-import com.langjoo.prac.domain.Follow;
-import com.langjoo.prac.domain.RetweetType;
-import com.langjoo.prac.domain.Tweet;
-import com.langjoo.prac.domain.User;
+import com.langjoo.prac.domain.*;
 import com.langjoo.prac.follow.repository.FollowRepository;
+import com.langjoo.prac.like.repository.LikeRepository;
 import com.langjoo.prac.tweet.dto.TweetRequest;
 import com.langjoo.prac.tweet.dto.TweetResponse;
 import com.langjoo.prac.tweet.repository.TweetRepository;
@@ -33,6 +31,7 @@ public class TweetServiceImpl implements TweetService {
     private final TweetRepository tweetRepository;
     private final UserRepository userRepository;
     private final FollowRepository followRepository; // 피드 생성을 위해 필요
+    private final LikeRepository likeRepository; // 📌 [추가] 좋아요 리포지토리 주입
 
     // 유틸리티 메서드: User 객체를 찾는 메서드
     private User findUserById(Long userId) {
@@ -90,6 +89,29 @@ public class TweetServiceImpl implements TweetService {
                         (existing, replacement) -> existing
                 ));
 
+
+        // -------------------------------------------------------------
+        // 📌 [추가] 좋아요 여부 플래그 처리를 위한 Like ID 목록 조회
+        // -------------------------------------------------------------
+
+        // 타임라인에 표시할 모든 트윗의 ID를 수집합니다. (원본 트윗 ID 포함)
+        List<Long> tweetIdsToCheck = tweets.stream()
+                // 순수 트윗, 인용 트윗의 경우 본인 ID
+                .map(tweet -> tweet.isRetweet() ? tweet.getOriginalTweet().getId() : tweet.getId())
+                .distinct()
+                .collect(Collectors.toList());
+
+        // LikeRepository에서 현재 사용자가 이 트윗 ID들에 좋아요를 눌렀는지 모두 조회
+        // 💡 LikeRepository에 다음 메서드가 필요: List<Like> findByUserIdAndTweetIdIn(Long userId, List<Long> tweetIds);
+        List<Like> likedTweets = likeRepository.findByUserIdAndTweetIdIn(currentUserId, tweetIdsToCheck);
+
+        // Map<Tweet ID, true> 형태로 변환하여 빠르게 조회 가능하도록 준비
+        Map<Long, Boolean> likedMap = likedTweets.stream()
+                .collect(Collectors.toMap(
+                        like -> like.getTweet().getId(), // 좋아요된 트윗의 ID
+                        like -> true // 좋아요 맵에 존재 = true
+                ));
+
         // -------------------------------------------------------------
 // 6. DTO 변환 시 플래그 설정 (수정된 로직)
 // -------------------------------------------------------------
@@ -111,6 +133,9 @@ public class TweetServiceImpl implements TweetService {
                         // 순수 트윗이거나 남의 트윗인 경우에만, Map을 통해 '내가 리트윗했는지' 검사합니다.
                         response.setRetweetedByMe(retweetedMap.containsKey(targetId));
                     }
+
+                    // 📌 [주입] isLikedByMe 플래그 주입
+                    response.setLikedByMe(likedMap.containsKey(targetId));
 
                     return response;
                 })

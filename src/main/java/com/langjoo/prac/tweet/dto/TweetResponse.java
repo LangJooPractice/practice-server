@@ -18,6 +18,8 @@ public class TweetResponse {
 
     // 📌 새로운 필드: 현재 로그인 유저가 이 트윗(원본이든 리트윗이든)을 리트윗 했는지 여부
     private boolean isRetweetedByMe; // 👈 추가
+    // 📌 [추가] 내가 이 트윗에 좋아요를 눌렀는지 여부
+    private boolean isLikedByMe;
 
     // 📌 2. 원본 트윗의 ID 추가 (리트윗일 경우에만 값이 존재)
     // Long 타입은 null을 가질 수 있으므로, 원본 트윗이 아닐 때는 null이 됩니다.
@@ -39,10 +41,15 @@ public class TweetResponse {
 
     // 📌 엔티티를 DTO로 변환하는 팩토리 메서드 (핵심!)
     public static TweetResponse from(Tweet tweet) {
-        // ⚠️ 주의: 리트윗의 원본 트윗 ID를 가져오는 방식 확인
-        Long originalId = null;
-        if (tweet.isRetweet() && tweet.getOriginalTweet() != null) {
-            originalId = tweet.getOriginalTweet().getId();
+        // 1. 📌 카운트의 출처(Source)를 결정합니다. 기본값은 현재 트윗입니다.
+        Tweet countSource = tweet;
+
+        // 2. [핵심 로직] 순수 리트윗인 경우, 원본 트윗을 카운트의 출처로 지정합니다.
+        // tweet.isRetweet() 헬퍼 메서드를 사용하여 리트윗인지 확인합니다.
+        if (tweet.isRetweet() && tweet.getRetweetType() == RetweetType.PURE_RETWEET && tweet.getOriginalTweet() != null) {
+
+            // 원본 트윗 엔티티를 카운트 소스로 사용합니다.
+            countSource = tweet.getOriginalTweet();
         }
 
         return TweetResponse.builder()
@@ -53,13 +60,15 @@ public class TweetResponse {
                 .userId(tweet.getUser().getId())
                 .username(tweet.getUser().getUsername()) // DB name 필드를 사용한다고 가정
                 .nickname(tweet.getUser().getNickname())
+
                 // 카운트 필드
-                .likeCount(tweet.getLikeCount())
-                .retweetCount(tweet.getRetweetCount())
+                // 4. 📌 [수정] 카운트는 countSource의 것을 사용합니다.
+                .likeCount(countSource.getLikeCount())
+                .retweetCount(countSource.getRetweetCount())
 
                 // 📌 추가된 필드 설정
                 .type(tweet.getRetweetType()) // 👈 엔티티의 타입을 가져와 설정
-                .originalTweetId(originalId) // 위에서 추출한 원본 트윗 ID를 설정
+                .originalTweetId(tweet.getOriginalTweet() != null ? tweet.getOriginalTweet().getId() : null)
 
                 .build();
     }
