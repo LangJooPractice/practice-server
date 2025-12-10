@@ -6,6 +6,7 @@ import com.langjoo.prac.follow.repository.FollowRepository;
 import com.langjoo.prac.like.repository.LikeRepository;
 import com.langjoo.prac.tweet.dto.TweetRequest;
 import com.langjoo.prac.tweet.dto.TweetResponse;
+import com.langjoo.prac.tweet.dto.TweetSearchRequest;
 import com.langjoo.prac.tweet.repository.TweetRepository;
 import com.langjoo.prac.user.repository.UserRepository;
 import jakarta.transaction.Transactional; // 트랜잭션 관리를 위해 사용
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -255,4 +257,156 @@ public class TweetServiceImpl implements TweetService {
             throw new NotFoundException("취소할 순수 리트윗을 찾을 수 없거나, 인용 트윗입니다.");
         }
     }
+
+    private List<TweetResponse> mapTweetsToResponseWithFlags(Long currentUserId, List<Tweet> tweets) {
+        if (tweets.isEmpty()) {
+            return List.of();
+        }
+
+        User currentUser = findUserById(currentUserId);
+
+        // -------------------------------------------------------------
+        // 1. 타겟 ID 목록 수집 (좋아요/리트윗 여부를 검사할 원본 트윗 ID)
+        // -------------------------------------------------------------
+        List<Long> originalTargetIds = tweets.stream()
+                // isRetweet() 헬퍼 메서드를 사용하며, Lazy Loading을 방지하기 위해 Fetch Join이 필요함
+                .filter(tweet -> tweet.isRetweet() && tweet.getOriginalTweet() == null) // null 체크는 안전장치
+                .map(tweet -> tweet.isRetweet() ? tweet.getOriginalTweet().getId() : tweet.getId())
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        if (originalTargetIds.isEmpty()) {
+            return tweets.stream().map(TweetResponse::from).collect(Collectors.toList());
+        }
+
+        // -------------------------------------------------------------
+        // 2. 집합 조회 (Bulk Query)
+        // -------------------------------------------------------------
+
+        // 2-1. 리트윗 여부 조회
+        List<Tweet> userRetweets = tweetRepository.findByUserAndOriginalTweetIdIn(currentUser, originalTargetIds);
+        Map<Long, Boolean> retweetedMap = userRetweets.stream()
+                .collect(Collectors.toMap(
+                        tweet -> tweet.getOriginalTweet().getId(),
+                        tweet -> true,
+                        (existing, replacement) -> existing // 충돌 처리
+                ));
+
+        // 2-2. 좋아요 여부 조회
+        List<Like> likedTweets = likeRepository.findByUserIdAndTweetIdIn(currentUserId, originalTargetIds);
+        Map<Long, Boolean> likedMap = likedTweets.stream()
+                .collect(Collectors.toMap(
+                        like -> like.getTweet().getId(),
+                        like -> true
+                ));
+
+        // -------------------------------------------------------------
+        // 3. DTO 변환 및 플래그 주입
+        // -------------------------------------------------------------
+        return tweets.stream()
+                .map(tweet -> {
+                    TweetResponse response = TweetResponse.from(tweet);
+
+                    // 순수 리트윗의 경우 원본 트윗 ID를, 아니면 현재 트윗 ID를 사용
+                    Long targetId = tweet.isRetweet() ? tweet.getOriginalTweet().getId() : tweet.getId();
+
+                    // 📌 플래그 설정
+                    // 인용 트윗은 isRetweetedByMe가 항상 false이므로, 헬퍼 메서드를 사용
+                    boolean isQuoteRetweet = tweet.getRetweetType() == RetweetType.QUOTE_RETWEET;
+
+                    if (isQuoteRetweet) {
+                        response.setRetweetedByMe(false);
+                    } else {
+                        response.setRetweetedByMe(retweetedMap.containsKey(targetId));
+                    }
+
+                    // 📌 좋아요 플래그 설정
+                    response.setLikedByMe(likedMap.containsKey(targetId));
+
+                    return response;
+                })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TweetResponse> searchAllTweets(Long currentUserId, TweetSearchRequest request) { // 📌 [수정] currentUserId 인자 추가
+        if (!request.isValid()) {
+            throw new IllegalArgumentException("검색 키워드 또는 기간이 필요합니다.");
+        }
+
+        // -------------------------------------------------------------
+        // 📌 [추가] 검색 기간 LocalTime 설정 로직
+        // -------------------------------------------------------------
+        LocalDateTime since = null;
+        if (request.getSince() != null) {
+            // 'since' 날짜의 시작 시간 (00:00:00)으로 변환
+            since = request.getSince().atStartOfDay();
+        }
+
+        LocalDateTime until = null;
+        if (request.getUntil() != null) {
+            // 'until' 날짜의 종료 시간 (23:59:59.999...)으로 변환
+            // JDBC/JPA는 보통 23:59:59.999999999까지 처리할 수 있지만,
+            // 안전하게 다음 날의 시작 시간 직전으로 처리하는 것이 일반적입니다.
+            // 여기서는 명확성을 위해 23:59:59로 설정합니다.
+            until = request.getUntil().atTime(23, 59, 59);
+        }
+        // -------------------------------------------------------------
+        List<Tweet> tweets = tweetRepository.searchTweetsByConditions(
+                request.getKeyword(),
+                since, // 변환된 LocalDateTime
+                until, // 변환된 LocalDateTime
+                null
+        );
+
+        // 2. 📌 [추가] 헬퍼 메서드를 사용하여 플래그 처리 후 반환
+        return mapTweetsToResponseWithFlags(currentUserId, tweets);
+    }
+
+    @Override
+    public List<TweetResponse> searchUserTweets(
+            Long currentUserId,
+            // 📌 [수정] targetUsername으로 인자 변경
+            String targetUsername,
+            TweetSearchRequest request) {
+
+        if (!request.isValid()) {
+            throw new IllegalArgumentException("검색 키워드 또는 기간이 필요합니다.");
+        }
+
+        // 1. 📌 [수정] Username으로 대상 User 조회
+        User targetUser = userRepository.findByUsername(targetUsername)
+                .orElseThrow(() -> new NotFoundException("검색 대상 사용자를 찾을 수 없습니다: " + targetUsername));
+
+        // -------------------------------------------------------------
+        // 📌 [추가] 검색 기간 LocalTime 설정 로직
+        // -------------------------------------------------------------
+        LocalDateTime since = null;
+        if (request.getSince() != null) {
+            // 'since' 날짜의 시작 시간 (00:00:00)으로 변환
+            since = request.getSince().atStartOfDay();
+        }
+
+        LocalDateTime until = null;
+        if (request.getUntil() != null) {
+            // 'until' 날짜의 종료 시간 (23:59:59.999...)으로 변환
+            // JDBC/JPA는 보통 23:59:59.999999999까지 처리할 수 있지만,
+            // 안전하게 다음 날의 시작 시간 직전으로 처리하는 것이 일반적입니다.
+            // 여기서는 명확성을 위해 23:59:59로 설정합니다.
+            until = request.getUntil().atTime(23, 59, 59);
+        }
+        // -------------------------------------------------------------
+
+        List<Tweet> tweets = tweetRepository.searchTweetsByUserAndConditions(
+                targetUser,
+                request.getKeyword(),
+                since, // 변환된 LocalDateTime
+                until // 변환된 LocalDateTime
+        );
+
+        // 2. 📌 [추가] 헬퍼 메서드를 사용하여 플래그 처리 후 반환
+        return mapTweetsToResponseWithFlags(currentUserId, tweets);
+    }
+
 }

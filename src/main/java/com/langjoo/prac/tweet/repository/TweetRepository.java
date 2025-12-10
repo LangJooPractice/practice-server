@@ -5,6 +5,10 @@ import com.langjoo.prac.domain.Tweet;
 import com.langjoo.prac.domain.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,4 +45,31 @@ public interface TweetRepository extends JpaRepository<Tweet, Long> {
     // 현재 유저가 특정 OriginalTweet ID 목록을 리트윗한 모든 Tweet 레코드를 조회합니다.
     List<Tweet> findByUserAndOriginalTweetIdIn(User user, List<Long> originalTweetIds);
 
+
+    // 📌 1. 전체 트윗 및 특정 유저 트윗 검색을 위한 동적 쿼리 인터페이스
+// 📌 [추가] 동적 검색 조건을 처리하는 @Query 정의
+    @Query("SELECT t FROM Tweet t " +
+            "WHERE (:userId IS NULL OR t.user.id = :userId) " + // 1. 특정 유저 필터링
+            "AND (:keyword IS NULL OR :keyword = '' OR t.content LIKE %:keyword%) " + // 2. 키워드 필터링
+            "AND (:since IS NULL OR t.createdAt >= :since) " + // 3. 시작 시점
+            "AND (:until IS NULL OR t.createdAt <= :until) " + // 4. 종료 시점
+            "ORDER BY t.createdAt DESC")
+    List<Tweet> searchTweetsByConditions(
+            @Param("keyword") String keyword,
+            @Param("since") LocalDateTime since,
+            @Param("until") LocalDateTime until,
+            @Param("userId") Long userId);
+
+    /// 📌 [추가] 특정 User의 트윗을 검색하는 @Query 정의
+    @Query("SELECT t FROM Tweet t " +
+            "WHERE t.user = :user " + // 1. 📌 특정 User 엔티티를 기준으로 필터링
+            "AND (:keyword IS NULL OR :keyword = '' OR t.content LIKE %:keyword%) " + // 2. 키워드 필터링
+            "AND (:since IS NULL OR t.createdAt >= :since) " + // 3. 시작 시점
+            "AND (:until IS NULL OR t.createdAt <= :until) " + // 4. 종료 시점
+            "ORDER BY t.createdAt DESC")
+    List<Tweet> searchTweetsByUserAndConditions(
+            @Param("user") User user,
+            @Param("keyword") String keyword,
+            @Param("since") LocalDateTime since,
+            @Param("until") LocalDateTime until);
 }

@@ -5,13 +5,18 @@ import com.langjoo.prac.common.exception.NotFoundException;
 import com.langjoo.prac.domain.Bookmark;
 import com.langjoo.prac.domain.Tweet;
 import com.langjoo.prac.domain.User;
+import com.langjoo.prac.tweet.dto.TweetResponse;
+import com.langjoo.prac.tweet.dto.TweetSearchRequest;
 import com.langjoo.prac.tweet.repository.TweetRepository;
 import com.langjoo.prac.user.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +47,47 @@ public class BookmarkServiceImpl implements BookmarkService {
 
             return true; // 좋아요 생성됨
         }
+    }
+
+    // 2. 내가 북마크 해놓은 트윗 중 검색
+    @Override
+    public List<TweetResponse> searchBookmarkedTweets(Long currentUserId, TweetSearchRequest request) {
+        if (!request.isValid()) {
+            throw new IllegalArgumentException("검색 키워드 또는 기간이 필요합니다.");
+        }
+
+        User currentUser = findUserById(currentUserId); // 유틸리티 메서드 가정
+
+        // -------------------------------------------------------------
+        // 📌 [추가] 검색 기간 LocalTime 설정 로직
+        // -------------------------------------------------------------
+        LocalDateTime since = null;
+        if (request.getSince() != null) {
+            // 'since' 날짜의 시작 시간 (00:00:00)으로 변환
+            since = request.getSince().atStartOfDay();
+        }
+
+        LocalDateTime until = null;
+        if (request.getUntil() != null) {
+            // 'until' 날짜의 종료 시간 (23:59:59.999...)으로 변환
+            // JDBC/JPA는 보통 23:59:59.999999999까지 처리할 수 있지만,
+            // 안전하게 다음 날의 시작 시간 직전으로 처리하는 것이 일반적입니다.
+            // 여기서는 명확성을 위해 23:59:59로 설정합니다.
+            until = request.getUntil().atTime(23, 59, 59);
+        }
+        // -------------------------------------------------------------
+
+        // 📌 [가정] BookmarkRepository에 북마크된 트윗을 조건으로 검색하는 메서드가 있다고 가정
+        // List<Tweet> findBookmarkedTweetsByConditions(User user, TweetSearchRequest request);
+        List<Tweet> tweets = bookmarkRepository.findBookmarkedTweetsByConditions(
+                currentUser,
+                request.getKeyword(),
+                since, // 변환된 LocalDateTime
+                until // 변환된 LocalDateTime
+        );
+
+        // 플래그 처리는 여기서도 필요합니다.
+        return tweets.stream().map(TweetResponse::from).collect(Collectors.toList());
     }
 
     // -------------------------------------------------------------

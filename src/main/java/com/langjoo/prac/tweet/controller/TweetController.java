@@ -3,6 +3,7 @@ package com.langjoo.prac.tweet.controller;
 import com.langjoo.prac.auth.config.UserDetailsImpl; // 인증된 사용자 정보를 가정
 import com.langjoo.prac.tweet.dto.TweetRequest; // 신규 트윗 작성을 위한 DTO
 import com.langjoo.prac.tweet.dto.TweetResponse;
+import com.langjoo.prac.tweet.dto.TweetSearchRequest;
 import com.langjoo.prac.tweet.service.TweetService; // Service 계층 주입
 import jakarta.validation.Valid; // 요청 DTO 유효성 검사를 위한 import
 import lombok.RequiredArgsConstructor;
@@ -101,5 +102,31 @@ public class TweetController {
         // Service 계층에서 리트윗 엔티티를 찾아서 삭제
         tweetService.cancelRetweet(currentUser.getUserId(), originalTweetId);
         return ResponseEntity.noContent().build();
+    }
+
+    // 1. 존재하는 전체 트윗 중 검색
+// GET /api/tweets/search/all?keyword=...&since=...
+    @GetMapping("/search/all")
+    public ResponseEntity<List<TweetResponse>> searchAllTweets(
+            @AuthenticationPrincipal UserDetailsImpl currentUser,
+            @ModelAttribute TweetSearchRequest request) {
+
+        List<TweetResponse> results = tweetService.searchAllTweets(currentUser.getUserId(), request);
+        return ResponseEntity.ok(results);
+    }
+
+    // 3. 특정 유저의 트윗 중 검색
+// 📌 [수정] 경로 변수를 {username}으로 변경
+// GET /api/users/{username}/tweets/search?keyword=...&since=...
+    @GetMapping("/search/users/{username}")
+    public ResponseEntity<List<TweetResponse>> searchUserTweets(
+            @AuthenticationPrincipal UserDetailsImpl currentUser,
+            // 📌 [수정] Long targetUserId 대신 String targetUsername으로 변경
+            @PathVariable String username,
+            @ModelAttribute TweetSearchRequest request) {
+
+        // 📌 [수정] 서비스 호출 시 targetUsername을 전달
+        List<TweetResponse> results = tweetService.searchUserTweets(currentUser.getUserId(), username, request);
+        return ResponseEntity.ok(results);
     }
 }

@@ -2,6 +2,7 @@ package com.langjoo.prac.tweet.service;
 
 import com.langjoo.prac.tweet.dto.TweetRequest;
 import com.langjoo.prac.tweet.dto.TweetResponse;
+import com.langjoo.prac.tweet.dto.TweetSearchRequest;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
 
@@ -24,4 +25,8 @@ public interface TweetService {
 
     // 6. 리트윗 취소
     void cancelRetweet(Long userId, Long originalTweetId);
+
+
+    public List<TweetResponse> searchUserTweets(Long currentUserId, String targetUsername, TweetSearchRequest request);
+    public List<TweetResponse> searchAllTweets(Long currentUserId, TweetSearchRequest request);
 }
