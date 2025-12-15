@@ -27,6 +27,9 @@ public interface TweetService {
     void cancelRetweet(Long userId, Long originalTweetId);
 
 
+    // 7. 특정 유저의 트윗 중 검색(실제 트위터는 7+8 합치고 검색어에서 특정 명령어 추출하는 거 같은데...)
     public List<TweetResponse> searchUserTweets(Long currentUserId, String targetUsername, TweetSearchRequest request);
+
+    // 8. 전체 트윗 중 검색
     public List<TweetResponse> searchAllTweets(Long currentUserId, TweetSearchRequest request);
 }
