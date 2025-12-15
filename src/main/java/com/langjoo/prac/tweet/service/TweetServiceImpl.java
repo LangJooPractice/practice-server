@@ -162,11 +162,33 @@ public class TweetServiceImpl implements TweetService {
     @Override
     public TweetResponse createTweet(Long userId, TweetRequest request) {
         User user = findUserById(userId);
+        Tweet replyToTweet = null;
 
-        // content validation은 Controller의 @Valid에서 1차로 처리됨
-        Tweet tweet = new Tweet(user, request.getContent());
+        // -------------------------------------------------------------
+        // 1. 📌 [핵심 로직] replyToTweetId 유무에 따라 답글 처리 결정
+        // -------------------------------------------------------------
+        if (request.getReplyToTweetId() != null) {
+            // ID가 존재하면, 해당 트윗을 DB에서 조회
+            replyToTweet = tweetRepository.findById(request.getReplyToTweetId())
+                    .orElseThrow(() -> new NotFoundException("답글 대상 트윗을 찾을 수 없습니다: ID " + request.getReplyToTweetId()));
 
-        Tweet savedTweet = tweetRepository.save(tweet);
+            // [추가] 답글 카운트 증가 로직 (선택적)
+            // replyToTweet.setReplyCount(replyToTweet.getReplyCount() + 1);
+            // tweetRepository.save(replyToTweet);
+        }
+
+
+        // 2. 트윗 엔티티 생성 및 저장
+        // 💡 Tweet 엔티티의 생성자를 답글 기능을 지원하도록 수정해야 합니다. (이전 답변에서 수정됨)
+        Tweet newTweet = new Tweet(
+                user,
+                request.getContent(),
+                replyToTweet, // 📌 답글 트윗 객체 전달 (null 또는 실제 객체)
+                RetweetType.ORIGINAL, // 답글은 기본적으로 ORIGINAL 타입입니다.
+                null // 답글은 originalTweet이 아닙니다.
+        );
+
+        Tweet savedTweet = tweetRepository.save(newTweet);
         return TweetResponse.from(savedTweet);
     }
 

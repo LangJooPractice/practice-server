@@ -41,12 +41,30 @@ public class Tweet extends BaseEntity{
     private Tweet originalTweet;
 
 
-    // 💡 [수정] 일반 트윗 생성자: RetweetType.ORIGINAL로 설정
-    public Tweet(User user, String content) {
+    // 📌 [추가] 이 트윗이 어떤 트윗에 대한 응답(답글)인지 나타냄 (대화 구조의 핵심)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_tweet_id") // 컬럼 이름을 reply_to_tweet_id로 지정
+    private Tweet replyToTweet;
+
+
+//    // 💡 [수정] 일반 트윗 생성자: RetweetType.ORIGINAL로 설정
+//    public Tweet(User user, String content) {
+//        this.user = user;
+//        this.content = content;
+//        this.retweetType = RetweetType.ORIGINAL; // 👈 타입 설정
+//        this.originalTweet = null;
+//    }
+
+    // 💡 새로운 트윗 생성자 업데이트 (답글 기능 포함)
+// 답글이 아닌 일반 트윗일 경우 replyToTweet은 null입니다.
+    public Tweet(User user, String content, Tweet replyToTweet, RetweetType type, Tweet originalTweet) {
         this.user = user;
         this.content = content;
-        this.retweetType = RetweetType.ORIGINAL; // 👈 타입 설정
-        this.originalTweet = null;
+        this.replyToTweet = replyToTweet; // 📌 추가된 필드 초기화
+        this.retweetType = type;
+        this.originalTweet = originalTweet;
+        this.likeCount = 0;
+        this.retweetCount = 0;
     }
 
     // 💡 [추가] 리트윗 여부를 확인하는 헬퍼 메서드 (기존 isRetweet()의 역할 대체)

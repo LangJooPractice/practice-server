@@ -16,6 +16,9 @@ public class TweetRequest {
     @Size(max = TWEET_MAX_LENGTH, message = "트윗 내용은 최대 "+TWEET_MAX_LENGTH+"자까지만 허용됩니다.") // 트위터의 280자 제한
     private String content;
 
+    // 📌 [추가] 답글을 달 대상 트윗의 ID (선택 사항)
+    private Long replyToTweetId;
+
     // 💡 참고: 일반 트윗 작성 시에는 이 필드만 사용합니다.
     // 💡 인용 리트윗 시에도 이 필드를 사용하여 인용 내용을 전달합니다.
 }
