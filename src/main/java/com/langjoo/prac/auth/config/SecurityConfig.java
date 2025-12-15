@@ -58,6 +58,13 @@ public class SecurityConfig {
                         // (선택적) 프로필 조회도 인증 없이 접근 허용
                         .requestMatchers(HttpMethod.GET, "/api/users/*").permitAll()
 
+                        // Swagger UI 및 OpenAPI 관련 경로를 permitAll()로 설정
+                        .requestMatchers(
+                                "/v3/api-docs/**",     // OpenAPI 명세 파일 경로
+                                "/swagger-ui/**",      // Swagger UI HTML/JS/CSS 경로
+                                "/swagger-ui.html"     // Swagger UI 메인 파일
+                        ).permitAll()
+
                         // 그 외 모든 요청은 인증 필요 (토큰이 있어야 접근 가능)
                         .anyRequest().authenticated()
                 );

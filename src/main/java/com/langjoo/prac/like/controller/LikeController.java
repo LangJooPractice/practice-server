@@ -3,6 +3,8 @@ package com.langjoo.prac.like.controller;
 
 import com.langjoo.prac.auth.config.UserDetailsImpl;
 import com.langjoo.prac.like.service.LikeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,6 +17,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tweets")
+@Tag(name = "좋아요")
 @RequiredArgsConstructor
 public class LikeController {
 
@@ -22,6 +25,7 @@ public class LikeController {
 
     // POST /tweets/{tweetId}/like
     @PostMapping("/{tweetId}/like")
+    @Operation(summary = "좋아요 생성/취소", description = "처음 보내면 좋아요 생성, 좋아요 상태였다면 좋아요 취소")
     public ResponseEntity<Map<String, Boolean>> toggleLike(
             @AuthenticationPrincipal UserDetailsImpl currentUser,
             @PathVariable Long tweetId) {

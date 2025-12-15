@@ -9,6 +9,8 @@ import com.langjoo.prac.user.dto.UserUpdateRequest;
 import com.langjoo.prac.user.service.UserService;
 import com.langjoo.prac.auth.service.AuthService; // 인증 서비스 분리 가정
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/users") // 💡 사용자 관련 API 루트 경로
+@Tag(name = "유저 관련")
 public class UserController {
 
     private final UserService userService;
@@ -27,6 +30,7 @@ public class UserController {
     // 1. 신규 회원 가입
     // POST /api/users/register
     @PostMapping("/register")
+    @Operation(summary = "회원가입")
     public ResponseEntity<Void> registerUser(@Valid @RequestBody UserRegisterRequest request) {
         // Service 계층에서 ID 중복 확인, 비밀번호 해싱 후 User 엔티티 저장
         userService.registerUser(request);
@@ -36,6 +40,7 @@ public class UserController {
     // 2. 로그인
     // POST /api/users/login
     @PostMapping("/login")
+    @Operation(summary = "로그인", description = "JWT 토큰 인증 방식")
     public ResponseEntity<AuthResponse> loginUser(@Valid @RequestBody LoginRequest request) {
         // AuthService에서 인증 처리 후 JWT 토큰을 포함한 응답 반환
         AuthResponse response = authService.login(request);
@@ -45,6 +50,7 @@ public class UserController {
 
     // 3. 프로필 보기
     @GetMapping("/{username}")
+    @Operation(summary = "특정 유저의 프로필 조회", description = "유저네임 전달")
     public ResponseEntity<UserProfileResponse> getUserProfile(
             // 📌 [수정] 현재 로그인 사용자 정보(ID)를 가져옵니다.
             @AuthenticationPrincipal UserDetailsImpl currentUser,
@@ -61,6 +67,7 @@ public class UserController {
 
     // 프로필 수정
     @PatchMapping // 👈 PATCH 메서드를 사용하여 부분 업데이트를 나타냅니다.
+    @Operation(summary = "프로필 수정", description = "회원가입 시 입력한 정보 외에도 상태메시지(bio), 위치(address) 등 추가 가능")
     public ResponseEntity<UserProfileResponse> updateUserProfile(
             // 📌 현재 로그인 사용자 ID
             @AuthenticationPrincipal UserDetailsImpl currentUser,
@@ -80,6 +87,7 @@ public class UserController {
     // 5. 회원 탈퇴
     // DELETE /api/users
     @DeleteMapping
+    @Operation(summary = "회원 탈퇴")
     public ResponseEntity<Void> deactivateUser(
             @AuthenticationPrincipal UserDetailsImpl currentUser) { // 현재 로그인 사용자 확인
 
