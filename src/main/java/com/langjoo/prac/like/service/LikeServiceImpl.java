@@ -67,4 +67,12 @@ public class LikeServiceImpl implements LikeService {
             return true; // 좋아요 생성됨
         }
     }
+
+    // 📌 [추가] 현재 좋아요 개수를 가져오는 별도 메서드
+    @Override
+    @Transactional
+    public int getLikeCount(Long tweetId) {
+        return likeRepository.countByTweet_Id(tweetId);
+    }
+
 }

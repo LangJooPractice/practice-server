@@ -2,6 +2,7 @@ package com.langjoo.prac.like.controller;
 
 
 import com.langjoo.prac.auth.config.UserDetailsImpl;
+import com.langjoo.prac.like.dto.LikeToggleResponse;
 import com.langjoo.prac.like.service.LikeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,18 +24,24 @@ public class LikeController {
 
     private final LikeService likeService;
 
-    // POST /tweets/{tweetId}/like
     @PostMapping("/{tweetId}/like")
-    @Operation(summary = "좋아요 생성/취소", description = "처음 보내면 좋아요 생성, 좋아요 상태였다면 좋아요 취소")
-    public ResponseEntity<Map<String, Boolean>> toggleLike(
-            @AuthenticationPrincipal UserDetailsImpl currentUser,
-            @PathVariable Long tweetId) {
+    @Operation(summary = "좋아요 생성/취소", description = "처음 호출 시 좋아요, 다시 호출 시 취소합니다.")
+    public ResponseEntity<LikeToggleResponse> toggleLike( // 📌 반환 타입 변경
+                                                          @AuthenticationPrincipal UserDetailsImpl currentUser,
+                                                          @PathVariable Long tweetId) {
 
-        // 좋아요 생성/취소 후 현재 상태(true/false)를 반환
+        // 1. 서비스 로직 실행 (상태와 카운트를 받아온다고 가정)
         boolean isLiked = likeService.toggleLike(currentUser.getUserId(), tweetId);
+        int currentLikeCount = likeService.getLikeCount(tweetId); // 필요시 추가
 
-        // 200 OK와 함께 현재 상태를 JSON으로 반환
-        return ResponseEntity.ok(Map.of("isLiked", isLiked));
+        // 2. DTO 생성 및 반환
+        LikeToggleResponse response = LikeToggleResponse.builder()
+                .tweetId(tweetId)
+                .isLiked(isLiked)
+                .likeCount(currentLikeCount)
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 }
 
