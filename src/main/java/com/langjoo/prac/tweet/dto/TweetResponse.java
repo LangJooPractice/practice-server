@@ -39,11 +39,16 @@ public class TweetResponse {
     private int likeCount;
     private int retweetCount;
 
+    // 📌 [추가] 답글 개수 필드
+    private int replyCount;
+
     // 📌 [추가] 이 트윗이 응답하고 있는 원본 트윗의 ID
     private Long replyToTweetId;
 
     // 📌 [추가] 이 트윗이 응답하고 있는 원본 트윗 작성자의 username (UI 표시용)
     private String replyToUsername;
+
+
 
     // 📌 엔티티를 DTO로 변환하는 팩토리 메서드 (핵심!)
     public static TweetResponse from(Tweet tweet) {
@@ -84,6 +89,9 @@ public class TweetResponse {
                 // 4. 📌 [수정] 카운트는 countSource의 것을 사용합니다.
                 .likeCount(countSource.getLikeCount())
                 .retweetCount(countSource.getRetweetCount())
+
+                // 📌 [추가] 엔티티에서 답글 개수를 가져와 설정
+                .replyCount(tweet.getReplyCount())
 
                 // 📌 [추가] 답글 정보 초기화
                 .replyToTweetId(replyId)

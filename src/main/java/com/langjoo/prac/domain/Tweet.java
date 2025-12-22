@@ -31,6 +31,9 @@ public class Tweet extends BaseEntity{
     @Column(name = "like_count")
     private int likeCount; // int 타입 유지 (기본값 0)
 
+    @Column(name = "reply_count")
+    private int replyCount = 0; // 📌 답글 개수 필드 추가 (기본값 0)
+
     // 📌 [수정] boolean isRetweet 대신 RetweetType Enum 사용
     @Enumerated(EnumType.STRING) // DB에 문자열로 저장
     @Column(name = "retweet_type", nullable = false)
@@ -72,6 +75,14 @@ public class Tweet extends BaseEntity{
         return this.retweetType != RetweetType.ORIGINAL;
     }
 
+
+    // 📌 개수 조절 메서드
+    public void incrementReplyCount() { this.replyCount++; }
+    public void decrementReplyCount() {
+        if (this.replyCount > 0) { // 0 미만으로 내려가지 않도록 방어 로직
+            this.replyCount--;
+        }
+    }
 
     // 💡 [수정] 리트윗 팩토리 메서드: content와 type을 분리하여 생성
     public static Tweet createRetweet(User user, Tweet originalTweet, String quoteContent, RetweetType type) {

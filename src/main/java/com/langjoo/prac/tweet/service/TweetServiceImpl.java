@@ -172,9 +172,8 @@ public class TweetServiceImpl implements TweetService {
             replyToTweet = tweetRepository.findById(request.getReplyToTweetId())
                     .orElseThrow(() -> new NotFoundException("답글 대상 트윗을 찾을 수 없습니다: ID " + request.getReplyToTweetId()));
 
-            // [추가] 답글 카운트 증가 로직 (선택적)
-            // replyToTweet.setReplyCount(replyToTweet.getReplyCount() + 1);
-            // tweetRepository.save(replyToTweet);
+            // 📌 [추가] 원본 트윗의 답글 개수 1 증가
+            replyToTweet.incrementReplyCount();
         }
 
 
@@ -202,6 +201,15 @@ public class TweetServiceImpl implements TweetService {
         // 1. 권한 검증: 트윗 작성자와 현재 사용자가 일치하는지 확인
         if (!tweet.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("해당 트윗을 삭제할 권한이 없습니다.");
+        }
+
+        // -------------------------------------------------------------
+        // 📌 [핵심 로직] 이 트윗이 답글(Reply)인 경우, 원본 트윗의 카운트 감소
+        // -------------------------------------------------------------
+        if (tweet.getReplyToTweet() != null) {
+            Tweet originalTweet = tweet.getReplyToTweet();
+            originalTweet.decrementReplyCount(); // 카운트 1 감소
+            // tweetRepository.save(originalTweet); // 변경 감지(Dirty Check)에 의해 자동 반영됨
         }
 
         // 2. 삭제
