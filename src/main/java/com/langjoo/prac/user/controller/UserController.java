@@ -3,6 +3,7 @@ package com.langjoo.prac.user.controller;
 import com.langjoo.prac.auth.config.UserDetailsImpl; // 인증된 사용자 정보를 가정
 import com.langjoo.prac.auth.dto.AuthResponse; // 로그인 응답 (JWT 토큰 포함)
 import com.langjoo.prac.auth.dto.LoginRequest; // 로그인 요청 DTO
+import com.langjoo.prac.user.dto.UserMeResponse;
 import com.langjoo.prac.user.dto.UserRegisterRequest; // 회원가입 요청 DTO
 import com.langjoo.prac.user.dto.UserProfileResponse; // 프로필 조회 응답 DTO
 import com.langjoo.prac.user.dto.UserUpdateRequest;
@@ -44,6 +45,22 @@ public class UserController {
     public ResponseEntity<AuthResponse> loginUser(@Valid @RequestBody LoginRequest request) {
         // AuthService에서 인증 처리 후 JWT 토큰을 포함한 응답 반환
         AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // 내 정보 가져오기
+    @GetMapping("/me")
+    @Operation(summary = "내 정보 조회", description = "액세스 토큰을 통해 현재 로그인한 사용자의 정보를 반환합니다.")
+    public ResponseEntity<UserMeResponse> getMyInfo(
+            @AuthenticationPrincipal UserDetailsImpl userDetails) {
+
+        // userDetails에 이미 정보가 담겨 있으므로 바로 DTO로 변환
+        UserMeResponse response = UserMeResponse.builder()
+                .userId(userDetails.getUser().getId())
+                .username(userDetails.getUsername())
+                .nickname(userDetails.getUser().getNickname())
+                .build();
+
         return ResponseEntity.ok(response);
     }
 
