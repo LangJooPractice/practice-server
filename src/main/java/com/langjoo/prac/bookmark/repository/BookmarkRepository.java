@@ -16,6 +16,10 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     // 📌 유일성 검증 및 삭제를 위한 조회 (핵심)
     Optional<Bookmark> findByUserAndTweet(User user, Tweet tweet);
 
+    // 📌 특정 트윗 ID를 가진 북마크의 개수를 세는 쿼리 메서드
+    // Tweet 엔티티 내의 id 필드를 참조하므로 Tweet_Id 형식을 사용합니다.
+    int countByTweet_Id(Long tweetId);
+
     // 📌 특정 유저의 북마크 목록 조회 (북마크 페이지 로딩 시 사용)
     List<Bookmark> findByUserOrderByCreatedAtDesc(User user);
 

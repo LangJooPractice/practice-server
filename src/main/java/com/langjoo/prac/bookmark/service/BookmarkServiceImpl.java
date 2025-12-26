@@ -105,4 +105,10 @@ public class BookmarkServiceImpl implements BookmarkService {
         return tweetRepository.findById(tweetId)
                 .orElseThrow(() -> new NotFoundException("트윗을 찾을 수 없습니다: ID " + tweetId));
     }
+    @Override
+    @Transactional
+    public int getBookmarkCount(Long tweetId) {
+        return bookmarkRepository.countByTweet_Id(tweetId);
+    }
+
 }

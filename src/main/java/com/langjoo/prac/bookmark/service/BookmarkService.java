@@ -10,4 +10,6 @@ public interface BookmarkService {
     // 북마크 생성/취소 토글
     boolean toggleBookmark(Long userId, Long tweetId);
     public List<TweetResponse> searchBookmarkedTweets(Long currentUserId, TweetSearchRequest request);
+
+    int getBookmarkCount(Long tweetId);
 }
