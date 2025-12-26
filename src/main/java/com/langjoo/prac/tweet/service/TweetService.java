@@ -3,6 +3,7 @@ package com.langjoo.prac.tweet.service;
 import com.langjoo.prac.tweet.dto.TweetRequest;
 import com.langjoo.prac.tweet.dto.TweetResponse;
 import com.langjoo.prac.tweet.dto.TweetSearchRequest;
+import com.langjoo.prac.tweet.dto.TweetStatsResponse;
 import org.springframework.data.domain.Pageable;
 import java.util.List;
 
@@ -32,4 +33,6 @@ public interface TweetService {
 
     // 8. 전체 트윗 중 검색
     public List<TweetResponse> searchAllTweets(Long currentUserId, TweetSearchRequest request);
+
+    public TweetStatsResponse getTweetStats(Long tweetId);
 }

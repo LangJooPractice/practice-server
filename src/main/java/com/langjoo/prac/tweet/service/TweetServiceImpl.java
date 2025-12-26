@@ -7,6 +7,7 @@ import com.langjoo.prac.like.repository.LikeRepository;
 import com.langjoo.prac.tweet.dto.TweetRequest;
 import com.langjoo.prac.tweet.dto.TweetResponse;
 import com.langjoo.prac.tweet.dto.TweetSearchRequest;
+import com.langjoo.prac.tweet.dto.TweetStatsResponse;
 import com.langjoo.prac.tweet.repository.TweetRepository;
 import com.langjoo.prac.user.repository.UserRepository;
 import jakarta.transaction.Transactional; // 트랜잭션 관리를 위해 사용
@@ -437,6 +438,24 @@ public class TweetServiceImpl implements TweetService {
 
         // 2. 📌 [추가] 헬퍼 메서드를 사용하여 플래그 처리 후 반환
         return mapTweetsToResponseWithFlags(currentUserId, tweets);
+    }
+
+    // TweetServiceImpl.java 내부에 추가
+
+    @Override
+    @Transactional
+    public TweetStatsResponse getTweetStats(Long tweetId) {
+        Tweet tweet = tweetRepository.findById(tweetId)
+                .orElseThrow(() -> new NotFoundException("트윗을 찾을 수 없습니다. ID: " + tweetId));
+
+        // 만약 엔티티에 카운트 필드가 관리되고 있다면 바로 꺼내오고,
+        // 아니라면 리포지토리의 countBy 메서드를 사용하세요.
+        return TweetStatsResponse.builder()
+                .tweetId(tweetId)
+                .likeCount(tweet.getLikeCount())   // 엔티티 필드 사용 시
+                .replyCount(tweet.getReplyCount()) // 엔티티 필드 사용 시
+                .retweetCount(tweet.getRetweetCount()) // 엔티티 필드 사용 시
+                .build();
     }
 
 }

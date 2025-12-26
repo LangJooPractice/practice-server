@@ -4,6 +4,7 @@ import com.langjoo.prac.auth.config.UserDetailsImpl; // 인증된 사용자 정�
 import com.langjoo.prac.tweet.dto.TweetRequest; // 신규 트윗 작성을 위한 DTO
 import com.langjoo.prac.tweet.dto.TweetResponse;
 import com.langjoo.prac.tweet.dto.TweetSearchRequest;
+import com.langjoo.prac.tweet.dto.TweetStatsResponse;
 import com.langjoo.prac.tweet.service.TweetService; // Service 계층 주입
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -139,5 +140,14 @@ public class TweetController {
         // 📌 [수정] 서비스 호출 시 targetUsername을 전달
         List<TweetResponse> results = tweetService.searchUserTweets(currentUser.getUserId(), username, request);
         return ResponseEntity.ok(results);
+    }
+
+    // TweetController.java 내부에 추가
+
+    @GetMapping("/tweets/{tweetId}/stats")
+    @Operation(summary = "트윗 통계 조회", description = "특정 트윗의 좋아요, 리트윗, 답글 개수를 조회합니다.")
+    public ResponseEntity<TweetStatsResponse> getTweetStats(@PathVariable Long tweetId) {
+        TweetStatsResponse stats = tweetService.getTweetStats(tweetId);
+        return ResponseEntity.ok(stats);
     }
 }
